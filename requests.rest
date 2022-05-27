@@ -1,0 +1,42 @@
+GET http://localhost:8080/api/categories
+
+###
+
+POST http://localhost:8080/api/categories
+content-type: application/json
+
+{
+  "name": "Jackets"
+}
+
+###
+
+DELETE http://localhost:8080/api/categories/62912e05db3288be8dcb2902
+
+###
+
+PUT http://localhost:8080/api/categories/62912e14db3288be8dcb2906
+content-type: application/json
+
+{
+  "name": "Jeans"
+}
+
+###
+
+GET http://localhost:8080/api/products/category/6291428801d3e80d202e329c
+
+###
+
+POST http://localhost:8080/api/products
+content-type: application/json
+
+{
+  "name": "Black Jacket",
+  "price": 1000,
+  "category": "6291428801d3e80d202e329c"
+}
+
+
+
+

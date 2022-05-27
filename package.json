@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node src/server",
+    "start": "nodemon src/server",
     "dev": "nodemon ./src/server -q",
     "prettier": "prettier --write ./src"
   },
