@@ -1,93 +1,81 @@
-const bcrypt = require('bcrypt');
-const User = require('../models/User.model');
-const generateToken = require('../config/generate.token');
+const { UserService } = require('../service/user.service');
+const { validationResult } = require('express-validator');
+const ApiError = require('../exceptions/api.error');
 
 module.exports.userController = {
-  registerUser: async (req, res) => {
+  registerUser: async (req, res, next) => {
     try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return next(
+          ApiError.BadRequest('Ошибка при валидации', errors.array())
+        );
+      }
       const { name, pic, email, password, birthDate, sex } = req.body;
-      const hash = await bcrypt.hash(
-        password,
-        Number(process.env.BCRYPT_ROUNDS)
-      );
-
-      if (!name || !email || !password || !birthDate || !sex) {
-        res.status(400).json({
-          error: 'Пожалуйста заполните все поля!',
-        });
-      }
-
-      const userExist = await User.findOne({ email });
-      if (userExist) {
-        res
-          .status(400)
-          .json({ registrationError: 'Такой эл. адрес уже существует' });
-      }
-
-      const user = await User.create({
+      const userData = await UserService.registration(
         name,
-        email,
-        password: hash,
         pic,
+        email,
+        password,
         birthDate,
-        sex,
+        sex
+      );
+      res.cookie('refreshToken', userData.refreshToken, {
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+        httpOnly: true,
       });
-
-      if (user) {
-        res.status(201).json({
-          _id: user._id,
-          email: email,
-          name: name,
-          pic: pic,
-          birthDate: birthDate,
-          sex: sex,
-          token: generateToken(user._id),
-        });
-        res.status(200).json('Регистрация прошла успешно');
-      }
+      return res.json(userData);
     } catch (e) {
-      res.status(400).json({
-        registrationError: 'Не удалось зарегистрироваться' + e.toString(),
-      });
+      next(e);
     }
   },
 
-  authUser: async (req, res) => {
+  login: async (req, res, next) => {
     try {
       const { email, password } = req.body;
-      const user = await User.findOne({ email });
-
-      if (email.length === 0) {
-        res.status(401).json({ authorizationError: 'необходимо ввести email' });
-      }
-      if (password.length === 0) {
-        res
-          .status(401)
-          .json({ authorizationError: 'необходимо ввести пароль' });
-      }
-      if (!user) {
-        res.status(401).json({ authorizationError: 'неверный email' });
-      }
-
-      const valid = await bcrypt.compare(password, user.password);
-
-      if (!valid) {
-        res.status(401).json({ authorizationError: 'неверный пароль' });
-      }
-
-      if (user && valid) {
-        res.status(200).json({
-          _id: user._id,
-          email: user.email,
-          name: user.name,
-          pic: user.pic,
-          birthDate: user.birthDate,
-          sex: user.sex,
-          token: generateToken(user._id),
-        });
-      }
+      const userData = await UserService.login(email, password);
+      res.cookie('refreshToken', userData.refreshToken, {
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+        httpOnly: true,
+      });
+      return res.json(userData);
     } catch (e) {
-      res.status(400).json(`Не удалось авторизоватсья: ${e.toString()}`);
+      next(e);
+    }
+  },
+
+  logout: async (req, res, next) => {
+    try {
+      const { refreshToken } = req.cookies;
+      const token = await UserService.logout(refreshToken);
+      res.clearCookie('refreshToken');
+      return res.json(token);
+    } catch (e) {
+      next(e);
+    }
+  },
+
+  activate: async (req, res, next) => {
+    try {
+      const activationLink = req.params.link;
+      await UserService.activate(activationLink);
+      return res.redirect(process.env.CLIENT_URL);
+    } catch (e) {
+      next(e);
+    }
+  },
+
+  refresh: async (req, res, next) => {
+    try {
+      const { refreshToken } = req.cookies;
+      const userData = await UserService.refresh(refreshToken);
+      res.cookie('refreshToken', userData.refreshToken, {
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+        httpOnly: true,
+      });
+      return res.json(userData);
+    } catch (e) {
+      next(e);
     }
   },
 };
