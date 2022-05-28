@@ -9,7 +9,6 @@ const userSchema = mongoose.Schema(
     },
     pic: {
       type: String,
-      required: true,
       default:
         'https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg',
     },
@@ -34,6 +33,8 @@ const userSchema = mongoose.Schema(
       required: true,
       trim: true,
     },
+    isActivated: { type: Boolean, default: false },
+    activationLink: { type: String },
   },
   {
     timestamps: true,
