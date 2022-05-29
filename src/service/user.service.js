@@ -7,7 +7,7 @@ const UserDto = require('../dtos/user.dto');
 const ApiError = require('../exceptions/api.error');
 
 module.exports.UserService = {
-  registration: async (email, password) => {
+  registration: async (name, pic, email, password, birthDate, sex) => {
     const candidate = await User.findOne({ email });
     if (candidate) {
       throw ApiError.BadRequest(
@@ -18,17 +18,17 @@ module.exports.UserService = {
       password,
       Number(process.env.BCRYPT_ROUNDS)
     );
-    const activationLink = uuid.v4(); // v34fa-asfasf-142saf-sa-asf
+    const activationLink = uuid.v4();
 
     const user = await User.create({
-      email,
-      password: hashPassword,
-      activationLink,
       name,
       pic,
+      email,
+      password: hashPassword,
       birthDate,
       sex,
     });
+
     await MailService.sendActivationMail(
       email,
       `${process.env.API_URL}/api/activate/${activationLink}`

@@ -12,6 +12,7 @@ module.exports.userController = {
         );
       }
       const { name, pic, email, password, birthDate, sex } = req.body;
+
       const userData = await UserService.registration(
         name,
         pic,
